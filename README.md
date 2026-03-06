@@ -11,7 +11,7 @@
 
 ---
 
-> 📥 **Download full Power BI file (.pbix):** [Google Drive Link] (https://drive.google.com/file/d/1wQoQI3DIbJJxRWMvD1DayvcHRuNtr2Tj/view?usp=sharing)
+> 📥 **Download full Power BI file (.pbix):** [Google Drive Link](https://drive.google.com/file/d/1wQoQI3DIbJJxRWMvD1DayvcHRuNtr2Tj/view?usp=sharing)
 
 
 ---

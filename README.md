@@ -11,14 +11,6 @@
 
 ---
 
-## Dashboard Preview
-
-### Page 1 — Is Revenue Growth Structurally Sustainable?
-![Dashboard Page 1](screenshots/dashboard_page1.png)
-
-### Page 2 — Customer Retention Deep Dive
-![Dashboard Page 2](screenshots/dashboard_page2.png)
-
 > 📥 **Download full Power BI file (.pbix):** [Google Drive Link] (https://drive.google.com/file/d/1wQoQI3DIbJJxRWMvD1DayvcHRuNtr2Tj/view?usp=sharing)
 
 

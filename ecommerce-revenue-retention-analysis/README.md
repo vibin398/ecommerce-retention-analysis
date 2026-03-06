@@ -19,8 +19,8 @@
 ### Page 2 — Customer Retention Deep Dive
 ![Dashboard Page 2](screenshots/dashboard_page2.png)
 
-> 📥 **Download full Power BI file (.pbix):** [Google Drive Link](https://drive.google.com/your-link-here)
-> *(Replace this with your actual Google Drive share link)*
+> 📥 **Download full Power BI file (.pbix):** [Google Drive Link] (https://drive.google.com/file/d/1wQoQI3DIbJJxRWMvD1DayvcHRuNtr2Tj/view?usp=sharing)
+
 
 ---
 
@@ -114,10 +114,20 @@ Validated all raw data across four dimensions before any business analysis:
 - Identified what % of customers drive 80% of total revenue
 - Same analysis applied at **category level** to identify revenue-critical segments
 
-### Phase 6 — Strategic Targeting
-- Modelled impact of lifting repeat rate from **3.12% → 5%**
-- Calculated additional revenue achievable using current avg repeat spend
-- Quantified the business case for retention investment
+### Phase 6 — Strategic Targeting (What If Analysis)
+
+The key business question: *what happens to revenue if we grow the repeat customer rate from 3.12% to just 5%?*
+
+| Metric | Value |
+|---|---|
+| Total Unique Customers | 96,095 |
+| Current Repeat Customers | 2,997 |
+| Current Repeat Rate | 3.12% |
+| Avg Revenue per Repeat Customer | $314.99 |
+| Target Repeat Customers at 5% | 4,805 |
+| **Additional Revenue if 5% Achieved** | **$569,421.77** |
+
+> A modest improvement of just **~1.88 percentage points** in repeat rate — converting roughly **1,808 more customers** into repeat buyers — would generate an additional **$569K in revenue** without acquiring a single new customer. This makes retention investment one of the highest-ROI levers available to the business.
 
 ### Phase 7 — Query Performance Optimisation
 - Baseline `EXPLAIN ANALYZE` to capture pre-optimisation query plan
@@ -269,9 +279,12 @@ ecommerce-retention-analysis/
 
 | Resource | Link |
 |---|---|
-| 📊 Power BI Dashboard (.pbix) | [Google Drive](https://drive.google.com/your-link-here) *(update with your link)* |
+| 📊 Power BI Dashboard (.pbix) | [Google Drive](https://drive.google.com/file/d/1wQoQI3DIbJJxRWMvD1DayvcHRuNtr2Tj/view?usp=sharing)|
 | 📦 Olist Dataset | [Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) |
 
 ---
 
 *Ecommerce Customer Retention Analysis · End-to-End Data Analytics Project · 2026*
+
+
+

@@ -1,0 +1,117 @@
+-- ============================================================
+--   ECOMMERCE CUSTOMER RETENTION ANALYSIS
+--   Power BI DAX Measures
+--   Note: 'frieght_value' spelling preserved — matches source column name
+-- ============================================================
+
+
+-- ── CUSTOMER METRICS ──────────────────────────────────────
+
+Total_customers = DISTINCTCOUNT('ecommerce customers'[customer_unique_id])
+
+Repeat Customers = 
+CALCULATE(
+    DISTINCTCOUNT('ecommerce customers'[customer_unique_id]),
+    FILTER(
+        VALUES('ecommerce customers'[customer_unique_id]),
+        CALCULATE(
+            DISTINCTCOUNT('ecommerce orders'[order_id])
+        ) > 1
+    )
+)
+
+One-Time Customers = [Total_customers] - [Repeat Customers]
+
+Repeat Rate % = 
+DIVIDE(
+    [Repeat Customers],
+    DISTINCTCOUNT('ecommerce customers'[customer_unique_id])
+)
+
+
+-- ── REVENUE METRICS ───────────────────────────────────────
+
+Total Revenue = SUMX('ecommerce order_items','ecommerce order_items'[price] + 'ecommerce order_items'[frieght_value])
+
+Total Orders = DISTINCTCOUNT('ecommerce orders'[order_id])
+
+Repeat Revenue = 
+CALCULATE(
+    SUMX('ecommerce order_items','ecommerce order_items'[price] + 'ecommerce order_items'[frieght_value]),
+    FILTER(
+        VALUES('ecommerce customers'[customer_unique_id]),
+        CALCULATE(
+            DISTINCTCOUNT('ecommerce orders'[order_id]),
+            ALLEXCEPT(
+                'ecommerce customers',
+                'ecommerce customers'[customer_unique_id]
+            )
+        ) > 1
+    )
+)
+
+One-Time Revenue = [Total Revenue] - [Repeat Revenue]
+
+Repeat Revenue % = DIVIDE([Repeat Revenue], [Total Revenue])
+
+New Customer Revenue = CALCULATE(
+    [Total Revenue],
+    FILTER(
+        VALUES('ecommerce customers'[customer_unique_id]),
+        CALCULATE(
+            DISTINCTCOUNT('ecommerce orders'[order_id]),
+            ALLEXCEPT('ecommerce customers','ecommerce customers'[customer_unique_id])
+        ) = 1
+    )
+)
+
+Average Monthly Repeat Revenue% = AVERAGEX(VALUES('ecommerce orders'[MonthStart]),[Repeat Revenue %])
+
+
+-- ── SPEND METRICS ─────────────────────────────────────────
+
+Avg Spend Repeat = DIVIDE([Repeat Revenue],[Repeat Customers])
+
+Avg Spend One-Time = DIVIDE([One-Time Revenue],[One-Time Customers])
+
+
+-- ── INSIGHT METRICS ───────────────────────────────────────
+
+Top Repeat Category Insights = 
+VAR TopCategory = 
+    TOPN(
+        1,
+        SUMMARIZE(
+            'ecommerce category_transalation',
+            'ecommerce category_transalation'[product_category_name_english],
+            "Rev", [Repeat Revenue]
+        ),
+        [Rev], DESC
+    )
+VAR CategoryName = 
+    SUBSTITUTE(
+        MAXX(TopCategory, 'ecommerce category_transalation'[product_category_name_english]),
+        "_", " "
+    )
+VAR CategoryRevenue = MAXX(TopCategory,[Rev])
+RETURN
+    "Top Repeat Revenue Category: " & CategoryName & " ($" & FORMAT(CategoryRevenue,"#,##0") & ")"
+
+
+-- ── CALCULATED TABLE ──────────────────────────────────────
+
+Customer Order Summary = 
+ADDCOLUMNS(
+    VALUES('ecommerce customers'[customer_unique_id]),
+    "Total Orders", CALCULATE(DISTINCTCOUNT('ecommerce orders'[order_id])),
+    "Total Revenue", CALCULATE(SUM('ecommerce order_payments'[payment_value]))
+)
+
+
+-- ── CALCULATED COLUMN ─────────────────────────────────────
+
+MonthStart = DATE(
+    YEAR('ecommerce orders'[order_purchase_timestamp]),
+    MONTH('ecommerce orders'[order_purchase_timestamp]),
+    1
+)

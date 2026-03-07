@@ -11,8 +11,15 @@
 
 ---
 
-> 📥 **Download full Power BI file (.pbix):** [Google Drive Link](https://drive.google.com/file/d/1wQoQI3DIbJJxRWMvD1DayvcHRuNtr2Tj/view?usp=sharing)
+## Dashboard Preview
 
+### Page 1 — Is Revenue Growth Structurally Sustainable?
+![Dashboard Page 1](screenshots/dashboard_page1.png)
+
+### Page 2 — Customer Retention Deep Dive
+![Dashboard Page 2](screenshots/dashboard_page2.png)
+
+> 📥 **Download full Power BI file (.pbix):** [Google Drive Link](https://drive.google.com/file/d/1wQoQI3DIbJJxRWMvD1DayvcHRuNtr2Tj/view)
 
 ---
 
@@ -152,6 +159,8 @@ The key business question: *what happens to revenue if we grow the repeat custom
 
 ## Power BI Dashboard
 
+The dashboard is built on a **star schema data model** with `ecommerce orders` as the central fact table and 5 dimension/related tables connected via many-to-one relationships. All KPIs are powered by 15 custom DAX measures — see the [DAX Measures](#power-bi-dax-measures) section below for full details.
+
 ### Page 1 — Is Revenue Growth Structurally Sustainable?
 
 | Visual | Insight |
@@ -169,6 +178,102 @@ The key business question: *what happens to revenue if we grow the repeat custom
 | Top Categories by Repeat Revenue | `bed_bath_table` ($119K) leads, followed by `sports_leisure` ($89K) and `furniture_decor` ($81K) |
 | Repeat Rate % by State | AC (5.19%) and RO (4.17%) are outlier high-retention states; SP large but average at 3.22% |
 | New vs Repeat Revenue Trend | New customer revenue dominates throughout; repeat revenue % stays flat 2–4% |
+
+---
+
+## Power BI DAX Measures
+
+All measures are stored in `dax_measures.txt`. The full model contains **15 measures + 1 calculated table + 1 calculated column** across 6 connected tables.
+
+### Data Model — Star Schema
+
+`ecommerce orders` is the **central fact table**, connected to all dimension and related tables via **many-to-one relationships**:
+
+| Relationship | Cardinality | Filter Direction |
+|---|---|---|
+| ecommerce customers → ecommerce orders | One-to-Many | Single |
+| ecommerce orders → ecommerce order_items | One-to-Many | Single |
+| ecommerce orders → ecommerce order_payments | One-to-Many | Single |
+| ecommerce order_items → ecommerce products | Many-to-One | Single |
+| ecommerce products → ecommerce category_translation | Many-to-One | Single |
+
+This star schema design ensures **clean filter propagation** from dimension tables into the fact table — critical for measures like `Repeat Revenue` and `New Customer Revenue` that isolate customer segments without cross-filter interference. The `ALLEXCEPT` pattern in key measures explicitly overrides this filter context to compute lifetime customer behaviour independent of any visual-level filter.
+
+### Measure Highlights
+
+**Repeat Customers** — uses nested `CALCULATE` + `FILTER` + `DISTINCTCOUNT` to count only customers with more than one distinct order across the entire dataset, ignoring any active filters:
+```dax
+Repeat Customers = 
+CALCULATE(
+    DISTINCTCOUNT('ecommerce customers'[customer_unique_id]),
+    FILTER(
+        VALUES('ecommerce customers'[customer_unique_id]),
+        CALCULATE(DISTINCTCOUNT('ecommerce orders'[order_id])) > 1
+    )
+)
+```
+
+**Repeat Revenue** — uses `SUMX` over order_items with a `FILTER` + `ALLEXCEPT` pattern to correctly isolate revenue from repeat customers only, removing cross-filter interference:
+```dax
+Repeat Revenue = 
+CALCULATE(
+    SUMX('ecommerce order_items',
+        'ecommerce order_items'[price] + 'ecommerce order_items'[frieght_value]),
+    FILTER(
+        VALUES('ecommerce customers'[customer_unique_id]),
+        CALCULATE(
+            DISTINCTCOUNT('ecommerce orders'[order_id]),
+            ALLEXCEPT('ecommerce customers','ecommerce customers'[customer_unique_id])
+        ) > 1
+    )
+)
+```
+
+**New Customer Revenue** — isolates revenue from customers with exactly 1 order using `ALLEXCEPT` to compute lifetime order count independent of visual filters:
+```dax
+New Customer Revenue = CALCULATE(
+    [Total Revenue],
+    FILTER(
+        VALUES('ecommerce customers'[customer_unique_id]),
+        CALCULATE(
+            DISTINCTCOUNT('ecommerce orders'[order_id]),
+            ALLEXCEPT('ecommerce customers','ecommerce customers'[customer_unique_id])
+        ) = 1
+    )
+)
+```
+
+**Top Repeat Category Insights** — dynamic text KPI card using `VAR`, `TOPN`, `SUMMARIZE`, `MAXX`, and `SUBSTITUTE` to build a formatted insight string that updates with any filter:
+```dax
+Top Repeat Category Insights = 
+VAR TopCategory = 
+    TOPN(1,
+        SUMMARIZE('ecommerce category_transalation',
+            'ecommerce category_transalation'[product_category_name_english],
+            "Rev", [Repeat Revenue]),
+        [Rev], DESC)
+VAR CategoryName = 
+    SUBSTITUTE(MAXX(TopCategory,
+        'ecommerce category_transalation'[product_category_name_english]), "_", " ")
+VAR CategoryRevenue = MAXX(TopCategory,[Rev])
+RETURN "Top Repeat Revenue Category: " & CategoryName & " ($" & FORMAT(CategoryRevenue,"#,##0") & ")"
+```
+
+**Average Monthly Repeat Revenue%** — uses `AVERAGEX` over month values to compute the true average repeat revenue share across all months, not a simple overall divide:
+```dax
+Average Monthly Repeat Revenue% = 
+AVERAGEX(VALUES('ecommerce orders'[MonthStart]),[Repeat Revenue %])
+```
+
+**Customer Order Summary** *(Calculated Table)* — builds a virtual table using `ADDCOLUMNS` + `VALUES` to summarise each unique customer's total orders and total revenue in a single table:
+```dax
+Customer Order Summary = 
+ADDCOLUMNS(
+    VALUES('ecommerce customers'[customer_unique_id]),
+    "Total Orders", CALCULATE(DISTINCTCOUNT('ecommerce orders'[order_id])),
+    "Total Revenue", CALCULATE(SUM('ecommerce order_payments'[payment_value]))
+)
+```
 
 ---
 
@@ -258,6 +363,7 @@ FROM order_items GROUP BY order_id;
 ```
 ecommerce-retention-analysis/
 ├── ecommerce_project_final.sql        # Complete SQL — all 14 sections
+├── dax_measures.txt                   # All Power BI DAX measures
 ├── README.md                          # This file
 ├── screenshots/
 │   ├── dashboard_page1.png            # Revenue sustainability dashboard
@@ -271,10 +377,13 @@ ecommerce-retention-analysis/
 
 | Resource | Link |
 |---|---|
-| 📊 Power BI Dashboard (.pbix) | [Google Drive](https://drive.google.com/file/d/1wQoQI3DIbJJxRWMvD1DayvcHRuNtr2Tj/view?usp=sharing)|
+| 📊 Power BI Dashboard (.pbix) | [Google Drive](https://drive.google.com/file/d/1wQoQI3DIbJJxRWMvD1DayvcHRuNtr2Tj/view) |
 | 📦 Olist Dataset | [Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) |
 
 ---
 
 *Ecommerce Customer Retention Analysis · End-to-End Data Analytics Project · 2026*
+
+
+
 
